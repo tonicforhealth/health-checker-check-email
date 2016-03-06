@@ -4,7 +4,6 @@ namespace TonicHealthCheck\Check\Email\SendReceive;
 
 use DateTime;
 use Doctrine\ORM\EntityManager;
-use Exception;
 use PhpImap\Mailbox;
 use Swift_Mailer;
 use Swift_Message;
@@ -151,7 +150,6 @@ class EmailSendReceiveCheck extends AbstractEmailCheck
                 );
                 if (count($mails) > 0) {
                     foreach ($mails as $mailId) {
-                        $mail = $this->getMailbox()->getMail($mailId);
                         $this->getMailbox()->deleteMail($mailId);
                         $emailSendCheckI->setStatus(EmailSendReceive::STATUS_RECEIVED);
                         $this->getDoctrine()->persist($emailSendCheckI);
