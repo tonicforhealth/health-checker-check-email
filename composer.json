@@ -1,0 +1,40 @@
+{
+    "name": "tonicforhealth/health-checker-check-email",
+    "description": "Emails checker for health-checker",
+    "license": "MIT",
+    "keywords": ["tonicforhealth", "health-checker-check-email"],
+    "authors": [
+        {
+            "name": "Dmitry Gopkalo",
+            "email": "drefixs@gmail.com"
+        }
+    ],
+    "require": {
+        "swiftmailer/swiftmailer": "~5.4",
+        "php-imap/php-imap": "~2.0",
+        "tonicforhealth/health-checker-check": "^0.1.0",
+        "doctrine/orm": "~2.5"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "4.1.*"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url":  "git@github.com:tonicforhealth/health-checker-check"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "TonicHealthCheck\\Check\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "TonicHealthCheck\\Tests\\Check\\": "tests/"
+        }
+    },
+    "config": {
+        "bin-dir": "bin"
+    }
+}
