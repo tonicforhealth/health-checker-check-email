@@ -1,35 +1,29 @@
 <?php
 
-namespace TonicHealthCheck\Tests\Check\Email\SendReceive;
+namespace TonicHealthCheck\Tests\Check\Email\Receive;
 
 use DateTime;
-use diversen\cache;
 use Doctrine\ORM\EntityManager;
 use Exception;
 use PhpImap\Mailbox;
 use PHPUnit_Framework_MockObject_MockObject;
 use PHPUnit_Framework_TestCase;
-use Swift_Mailer;
-use Swift_Mime_Message;
-use Swift_SmtpTransport;
-use Swift_SwiftException;
 use TonicHealthCheck\Check\Email\Entity\EmailSendReceive;
 use TonicHealthCheck\Check\Email\Entity\EmailSendReceiveRepository;
-use TonicHealthCheck\Check\Email\SendReceive\EmailReceiveCheckException;
-use TonicHealthCheck\Check\Email\SendReceive\EmailSendCheckException;
-use TonicHealthCheck\Check\Email\SendReceive\EmailSendReceiveCheck;
 use PhpImap\Exception as ImapException;
+use TonicHealthCheck\Check\Email\Receive\EmailReceiveCheck;
+use TonicHealthCheck\Check\Email\Receive\EmailReceiveCheckException;
 
 /**
- * Class EmailSendReceiveCheckTest
+ * Class EmailReceiveCheckTest
  * @package TonicHealthCheck\Tests\Elasticsearch\GetDocument
  */
-class EmailSendReceiveCheckTest extends PHPUnit_Framework_TestCase
+class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
 {
     /**
-     * @var EmailSendReceiveCheck;
+     * @var EmailReceiveCheck;
      */
-    private $emailSendReceiveCheck;
+    private $emailReceiveCheck;
 
     /**
      * @var PHPUnit_Framework_MockObject_MockObject;
@@ -57,30 +51,15 @@ class EmailSendReceiveCheckTest extends PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $this->setTransport($this->getMockBuilder(Swift_SmtpTransport::class)->getMock());
-
-        $this->setMailer($this->getMockBuilder(Swift_Mailer::class)
-            ->disableOriginalConstructor()
-            ->getMock()
-        );
-
-        $this
-            ->getMailer()
-            ->method('getTransport')
-            ->willReturn($this->getTransport());
-
         $this->setMailbox($this->getMockBuilder(Mailbox::class)->disableOriginalConstructor()->getMock());
 
         $this->setDoctrine($this->getMockBuilder(EntityManager::class)->disableOriginalConstructor()->getMock());
 
-        $this->setEmailSendReceiveCheck(new EmailSendReceiveCheck(
+        $this->setEmailReceiveCheck(new EmailReceiveCheck(
             'testnode',
-            $this->getMailer(),
             $this->getMailbox(),
             $this->getDoctrine(),
-            'test@test.com',
-            'to_test@test.com',
-            '300'
+            300
         ));
 
         parent::setUp();
@@ -93,97 +72,12 @@ class EmailSendReceiveCheckTest extends PHPUnit_Framework_TestCase
     {
         $this->setUpEntity();
 
-        $this->setUpSendMock();
-
         $this->setUpGetMailBoxMock();
 
-        $checkResult = $this->getEmailSendReceiveCheck()->performCheck();
+        $checkResult = $this->getEmailReceiveCheck()->performCheck();
 
         $this->assertTrue($checkResult->isOk());
         $this->assertNull($checkResult->getError());
-    }
-
-    /**
-     * Test is fail
-     */
-    public function testSendIsFail()
-    {
-        $this->setUpEntity();
-
-
-        $this
-            ->getMailer()
-            ->method('send')
-            ->willReturnCallback(
-                function (Swift_Mime_Message $message, &$failedRecipients = null) {
-                    $failedRecipients = ['test@test.com' => false];
-
-                    return false;
-                }
-            );
-
-        $checkResult = $this->getEmailSendReceiveCheck()->performCheck();
-
-        $this->assertFalse($checkResult->isOk());
-        $this->assertInstanceOf(
-            EmailSendCheckException::class,
-            $checkResult->getError()
-        );
-        $this->assertEquals(
-            EmailSendCheckException::CODE_DOES_NOT_SEND,
-            $checkResult->getError()->getCode()
-        );
-    }
-
-    /**
-     * Test is fail with exception
-     */
-    public function testSendThrowException()
-    {
-        $this->setUpEntity();
-
-        $exceptionMsg = 'Error msg text';
-        $exceptionCode = 124999;
-
-        $swiftSwiftException = new Swift_SwiftException($exceptionMsg, $exceptionCode);
-
-        $this
-            ->getMailer()
-            ->method('send')
-            ->willThrowException($swiftSwiftException);
-
-        $checkResult = $this->getEmailSendReceiveCheck()->performCheck();
-
-        $this->assertFalse($checkResult->isOk());
-        $this->assertEquals(EmailSendCheckException::CODE_INTERNAL_PROBLE, $checkResult->getError()->getCode());
-        $this->assertStringEndsWith($exceptionMsg, $checkResult->getError()->getMessage());
-        $this->assertInstanceOf(
-            EmailSendCheckException::class,
-            $checkResult->getError()
-        );
-    }
-
-    /**
-     * @expectedException Exception
-     * @expectedExceptionCode 32453
-     *
-     * Test is fail with unexpected exception
-     */
-    public function testSendThrowUnexpectedException()
-    {
-        $this->setUpEntity();
-
-        $exceptionMsg = 'Unexpected error msg text';
-        $exceptionCode = 32453;
-
-        $exception = new Exception($exceptionMsg, $exceptionCode);
-
-        $this
-            ->getMailer()
-            ->method('send')
-            ->willThrowException($exception);
-
-        $this->getEmailSendReceiveCheck()->performCheck();
     }
 
     /**
@@ -192,8 +86,6 @@ class EmailSendReceiveCheckTest extends PHPUnit_Framework_TestCase
     public function testSearchMailboxThrowException()
     {
         $this->setUpEntity();
-
-        $this->setUpSendMock();
 
         $exceptionMsg = 'Error msg text';
         $exceptionCode = 124999;
@@ -205,7 +97,7 @@ class EmailSendReceiveCheckTest extends PHPUnit_Framework_TestCase
             ->method('searchMailbox')
             ->willThrowException($imapException);
 
-        $checkResult = $this->getEmailSendReceiveCheck()->performCheck();
+        $checkResult = $this->getEmailReceiveCheck()->performCheck();
 
         $this->assertFalse($checkResult->isOk());
         $this->assertEquals(EmailReceiveCheckException::CODE_INTERNAL_PROBLE, $checkResult->getError()->getCode());
@@ -226,8 +118,6 @@ class EmailSendReceiveCheckTest extends PHPUnit_Framework_TestCase
     {
         $this->setUpEntity();
 
-        $this->setUpSendMock();
-
         $exceptionMsg = 'Unexpected error msg text';
         $exceptionCode = 32453;
 
@@ -238,7 +128,7 @@ class EmailSendReceiveCheckTest extends PHPUnit_Framework_TestCase
             ->method('searchMailbox')
             ->willThrowException($exception);
 
-        $this->getEmailSendReceiveCheck()->performCheck();
+        $this->getEmailReceiveCheck()->performCheck();
     }
 
     /**
@@ -248,8 +138,6 @@ class EmailSendReceiveCheckTest extends PHPUnit_Framework_TestCase
     {
 
         $this->setUpEntity();
-
-        $this->setUpSendMock();
 
         $exceptionMsg = 'Error msg text';
         $exceptionCode = 124999;
@@ -261,9 +149,9 @@ class EmailSendReceiveCheckTest extends PHPUnit_Framework_TestCase
             ->method('searchMailbox')
             ->willReturn([1,2,3,4,5]);
 
-        $checkResultFirst = $this->getEmailSendReceiveCheck()->performCheck();
+        $checkResultFirst = $this->getEmailReceiveCheck()->performCheck();
 
-        $checkResultSecond = $this->getEmailSendReceiveCheck()->performCheck();
+        $checkResultSecond = $this->getEmailReceiveCheck()->performCheck();
 
         $this->assertTrue($checkResultFirst->isOk());
         $this->assertFalse($checkResultSecond->isOk());
@@ -275,11 +163,11 @@ class EmailSendReceiveCheckTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @return EmailSendReceiveCheck
+     * @return EmailReceiveCheck
      */
-    public function getEmailSendReceiveCheck()
+    public function getEmailReceiveCheck()
     {
-        return $this->emailSendReceiveCheck;
+        return $this->emailReceiveCheck;
     }
 
     /**
@@ -315,11 +203,11 @@ class EmailSendReceiveCheckTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @param EmailSendReceiveCheck $emailSendReceiveCheck
+     * @param EmailReceiveCheck $emailReceiveCheck
      */
-    protected function setEmailSendReceiveCheck(EmailSendReceiveCheck $emailSendReceiveCheck)
+    protected function setEmailReceiveCheck(EmailReceiveCheck $emailReceiveCheck)
     {
-        $this->emailSendReceiveCheck = $emailSendReceiveCheck;
+        $this->emailReceiveCheck = $emailReceiveCheck;
     }
 
     /**
@@ -372,20 +260,6 @@ class EmailSendReceiveCheckTest extends PHPUnit_Framework_TestCase
 
         $emailSendReceiveRepository->method('findBy')->willReturn([$emailSendReceive]);
 
-    }
-
-    private function setUpSendMock()
-    {
-        $this
-            ->getMailer()
-            ->method('send')
-            ->willReturnCallback(
-                function (Swift_Mime_Message $message, &$failedRecipients = null) {
-                    $failedRecipients = ['test@test.com' => true];
-
-                    return true;
-                }
-            );
     }
 
     private function setUpGetMailBoxMock()

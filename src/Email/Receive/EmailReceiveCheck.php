@@ -1,27 +1,22 @@
 <?php
 
-namespace TonicHealthCheck\Check\Email\SendReceive;
+namespace TonicHealthCheck\Check\Email\Receive;
 
 use DateTime;
 use Doctrine\ORM\EntityManager;
 use PhpImap\Mailbox;
-use Swift_Mailer;
-use Swift_Message;
-use Swift_SwiftException;
 use TonicHealthCheck\Check\Email\AbstractEmailCheck;
 use TonicHealthCheck\Check\Email\Entity\EmailSendReceive;
 use PhpImap\Exception as ImapException;
 
 /**
- * Class EmailSendReceiveCheck
+ * Class EmailReceiveCheck
  * @package TonicHealthCheck\Check\Email\Send
  */
-class EmailSendReceiveCheck extends AbstractEmailCheck
+class EmailReceiveCheck extends AbstractEmailCheck
 {
-    const CHECK = 'email-send-receive-check';
+    const CHECK = 'email-receive-check';
     const RECEIVE_MAX_TIME = 300;
-    const MESSAGE_BODY = 'This is a test, you don\'t need to reply this massage.';
-
 
     /**
      * @var bool
@@ -32,11 +27,6 @@ class EmailSendReceiveCheck extends AbstractEmailCheck
      * @var int
      */
     private $receiveMaxTime;
-
-    /**
-     * @var Swift_Mailer $client
-     */
-    private $mailer;
 
     /**
      * @var Mailbox;
@@ -50,100 +40,37 @@ class EmailSendReceiveCheck extends AbstractEmailCheck
     private $doctrine;
 
     /**
-     * @var string;
-     */
-    private $from;
-
-    /**
-     * @var string;
-     */
-    private $toSubject;
-
-    /**
      * @param string        $checkNode
-     * @param Swift_Mailer  $mailer
      * @param Mailbox       $mailbox
      * @param EntityManager $doctrine
-     * @param string        $from
-     * @param string        $toSubjects
      * @param int           $receiveMaxTime
      */
     public function __construct(
         $checkNode,
-        Swift_Mailer $mailer,
         Mailbox $mailbox,
         EntityManager $doctrine,
-        $from,
-        $toSubjects,
         $receiveMaxTime = self::RECEIVE_MAX_TIME
     ) {
         parent::__construct($checkNode);
 
-        $this->setMailer($mailer);
         $this->setMailbox($mailbox);
         $this->setDoctrine($doctrine);
-        $this->setFrom($from);
-        $this->setToSubject($toSubjects);
         $this->setReceiveMaxTime($receiveMaxTime);
     }
 
     /**
      * Check email can send and receive messages
-     *
      * @return bool|void
-     * @throws AbstractEmailCheck
+     * @throws EmailReceiveCheckException
      */
     public function check()
     {
         $emailSendReceiveRepository = $this->getDoctrine()->getRepository(EmailSendReceive::class);
 
-
-        $lastSandedEmail = $emailSendReceiveRepository->findOneBy([], ['sentAt' => 'DESC']);
-        if (null === $lastSandedEmail || empty($lastSandedEmail->getSentAt()) || time() - $lastSandedEmail->getSentAt()->getTimestamp() > $this->getReceiveMaxTime()) {
-
-            // Create a message
-            $emailSendCheck = new EmailSendReceive();
-
-            $emailSendCheck->setFrom($this->getFrom());
-            $emailSendCheck->setTo($this->getToSubject());
-            $emailSendCheck->setBody(static::MESSAGE_BODY);
-
-            $this->getDoctrine()->persist($emailSendCheck);
-            $this->getDoctrine()->flush();
-
-            $emailSendCheck->setSubject($this->genEmailSubject($emailSendCheck));
-
-            $message = Swift_Message::newInstance($emailSendCheck->getSubject())
-                ->setFrom($emailSendCheck->getFrom())
-                ->setTo($emailSendCheck->getTo())
-                ->setBody($emailSendCheck->getBody());
-
-            // Send the message
-            try {
-                $numSent = $this->getMailer()->send($message, $failedRecipients);
-                $this->getMailer()->getTransport()->stop();
-            } catch (Swift_SwiftException $e) {
-                $emailSendCheck->setStatus(EmailSendReceive::STATUS_SAND_ERROR);
-                $this->getDoctrine()->persist($emailSendCheck);
-                $this->getDoctrine()->flush();
-                throw EmailSendCheckException::internalProblem($e);
-            }
-
-            if (!$numSent) {
-                $emailSendCheck->setStatus(EmailSendReceive::STATUS_SAND_ERROR);
-                $this->getDoctrine()->persist($emailSendCheck);
-                $this->getDoctrine()->flush();
-                throw EmailSendCheckException::doesNotSendMessage(array_keys($failedRecipients));
-            }
-
-            $emailSendCheck->setStatus(EmailSendReceive::STATUS_SANDED);
-            $emailSendCheck->setSentAt(new DateTime());
-            $this->getDoctrine()->persist($emailSendCheck);
-            $this->getDoctrine()->flush();
-        }
-
         /** @var EmailSendReceive $emailSendCheckI */
-        foreach ($emailSendReceiveRepository->findBy(['status' => EmailSendReceive::STATUS_SANDED]) as $emailSendCheckI) {
+        foreach ($emailSendReceiveRepository->findBy(
+            ['status' => EmailSendReceive::STATUS_SANDED]
+        ) as $emailSendCheckI) {
             try {
                 $mails = $this->getMailbox()->searchMailbox(
                     'FROM '.$emailSendCheckI->getFrom().' SUBJECT '.$emailSendCheckI->getSubject()
@@ -182,15 +109,6 @@ class EmailSendReceiveCheck extends AbstractEmailCheck
                 throw EmailReceiveCheckException::internalProblem($e);
             }
         }
-
-    }
-
-    /**
-     * @return Swift_Mailer
-     */
-    public function getMailer()
-    {
-        return $this->mailer;
     }
 
     /**
@@ -210,22 +128,6 @@ class EmailSendReceiveCheck extends AbstractEmailCheck
     }
 
     /**
-     * @return string
-     */
-    public function getFrom()
-    {
-        return $this->from;
-    }
-
-    /**
-     * @return string
-     */
-    public function getToSubject()
-    {
-        return $this->toSubject;
-    }
-
-    /**
      * @return int
      */
     public function getReceiveMaxTime()
@@ -242,14 +144,6 @@ class EmailSendReceiveCheck extends AbstractEmailCheck
     }
 
     /**
-     * @param Swift_Mailer $mailer
-     */
-    protected function setMailer(Swift_Mailer $mailer)
-    {
-        $this->mailer = $mailer;
-    }
-
-    /**
      * @param Mailbox $mailbox
      */
     protected function setMailbox(Mailbox $mailbox)
@@ -263,31 +157,6 @@ class EmailSendReceiveCheck extends AbstractEmailCheck
     protected function setDoctrine(EntityManager $doctrine)
     {
         $this->doctrine = $doctrine;
-    }
-
-    /**
-     * @param string $from
-     */
-    protected function setFrom($from)
-    {
-        $this->from = $from;
-    }
-
-    /**
-     * @param string $toSubject
-     */
-    protected function setToSubject($toSubject)
-    {
-        $this->toSubject = $toSubject;
-    }
-
-    /**
-     * @param EmailSendReceive $emailSendCheck
-     * @return string
-     */
-    protected function genEmailSubject(EmailSendReceive $emailSendCheck)
-    {
-        return sprintf('%s:#%d', $this->getCheckIdent(), $emailSendCheck->getId());
     }
 
     /**

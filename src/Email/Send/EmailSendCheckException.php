@@ -1,6 +1,6 @@
 <?php
 
-namespace TonicHealthCheck\Check\Email\SendReceive;
+namespace TonicHealthCheck\Check\Email\Send;
 
 use TonicHealthCheck\Check\Email\EmailCheckException;
 

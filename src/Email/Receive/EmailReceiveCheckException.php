@@ -1,12 +1,12 @@
 <?php
 
-namespace TonicHealthCheck\Check\Email\SendReceive;
+namespace TonicHealthCheck\Check\Email\Receive;
 
 use TonicHealthCheck\Check\Email\EmailCheckException;
 
 /**
  * Class EmailReceiveCheckException
- * @package TonicHealthCheck\Check\Email\SendReceive
+ * @package TonicHealthCheck\Check\Email\Receive
  */
 class EmailReceiveCheckException extends EmailCheckException
 {
