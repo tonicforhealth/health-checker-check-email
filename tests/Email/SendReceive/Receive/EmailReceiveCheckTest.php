@@ -33,11 +33,6 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
     /**
      * @var PHPUnit_Framework_MockObject_MockObject;
      */
-    private $mailer;
-
-    /**
-     * @var PHPUnit_Framework_MockObject_MockObject;
-     */
     private $mailbox;
 
     /**
@@ -176,14 +171,6 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
     public function getMailbox()
     {
         return $this->mailbox;
-    }
-
-    /**
-     * @return PHPUnit_Framework_MockObject_MockObject
-     */
-    public function getMailer()
-    {
-        return $this->mailer;
     }
 
     /**
