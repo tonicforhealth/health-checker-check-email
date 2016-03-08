@@ -178,9 +178,9 @@ class EmailReceiveCheck extends AbstractEmailCheck
     }
 
     /**
-     * @param $emailSendCheckI
+     * @param EmailSendReceive $emailSendCheckI
      */
-    private function saveEmailSendReceive($emailSendCheckI)
+    private function saveEmailSendReceive(EmailSendReceive $emailSendCheckI)
     {
         $this->getDoctrine()->persist($emailSendCheckI);
         $this->getDoctrine()->flush();
