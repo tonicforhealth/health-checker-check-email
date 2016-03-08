@@ -4,7 +4,6 @@ namespace TonicHealthCheck\Check\Email\Send;
 
 use DateTime;
 use Doctrine\ORM\EntityManager;
-use PhpImap\Mailbox;
 use Swift_Mailer;
 use Swift_Message;
 use Swift_SwiftException;
@@ -18,7 +17,6 @@ use TonicHealthCheck\Check\Email\Entity\EmailSendReceive;
 class EmailSendCheck extends AbstractEmailCheck
 {
     const CHECK = 'email-send-check';
-    
     const MESSAGE_BODY = 'This is a test, you don\'t need to reply this massage.';
     const SEND_INTERVAL = 600;
 
@@ -31,12 +29,6 @@ class EmailSendCheck extends AbstractEmailCheck
      * @var Swift_Mailer $client
      */
     private $mailer;
-
-    /**
-     * @var Mailbox;
-     */
-    private $mailbox;
-
 
     /**
      * @var EntityManager
@@ -85,10 +77,10 @@ class EmailSendCheck extends AbstractEmailCheck
      */
     public function check()
     {
-        $emailSendReceiveRepository = $this->getDoctrine()->getRepository(EmailSendReceive::class);
+        $emailSendReceiveR = $this->getDoctrine()->getRepository(EmailSendReceive::class);
 
 
-        $lastSandedEmail = $emailSendReceiveRepository->findOneBy([], ['sentAt' => 'DESC']);
+        $lastSandedEmail = $emailSendReceiveR->findOneBy([], ['sentAt' => 'DESC']);
         if (null === $lastSandedEmail
             || empty($lastSandedEmail->getSentAt())
             || (time() - $lastSandedEmail->getSentAt()->getTimestamp()) > $this->getSendInterval()

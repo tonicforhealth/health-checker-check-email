@@ -65,10 +65,10 @@ class EmailReceiveCheck extends AbstractEmailCheck
      */
     public function check()
     {
-        $emailSendReceiveRepository = $this->getDoctrine()->getRepository(EmailSendReceive::class);
+        $emailSendReceiveR = $this->getDoctrine()->getRepository(EmailSendReceive::class);
 
         /** @var EmailSendReceive $emailSendCheckI */
-        foreach ($emailSendReceiveRepository->findBy(
+        foreach ($emailSendReceiveR->findBy(
             ['status' => EmailSendReceive::STATUS_SANDED]
         ) as $emailSendCheckI) {
             try {
