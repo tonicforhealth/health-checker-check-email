@@ -6,6 +6,7 @@ use DateTime;
 use Doctrine\ORM\EntityManager;
 use Swift_Mailer;
 use Swift_Message;
+use Swift_Mime_Message;
 use Swift_SwiftException;
 use TonicHealthCheck\Check\Email\AbstractEmailCheck;
 use TonicHealthCheck\Check\Email\Entity\EmailSendReceive;
@@ -78,25 +79,12 @@ class EmailSendCheck extends AbstractEmailCheck
     public function check()
     {
         $emailSendReceiveR = $this->getDoctrine()->getRepository(EmailSendReceive::class);
-
-
         $lastSandedEmail = $emailSendReceiveR->findOneBy([], ['sentAt' => 'DESC']);
         if (null === $lastSandedEmail
             || empty($lastSandedEmail->getSentAt())
             || (time() - $lastSandedEmail->getSentAt()->getTimestamp()) > $this->getSendInterval()
         ) {
-
-            // Create a message
-            $emailSendCheck = new EmailSendReceive();
-
-            $emailSendCheck->setFrom($this->getFrom());
-            $emailSendCheck->setTo($this->getToSubject());
-            $emailSendCheck->setBody(static::MESSAGE_BODY);
-
-            $this->getDoctrine()->persist($emailSendCheck);
-            $this->getDoctrine()->flush();
-
-            $emailSendCheck->setSubject($this->genEmailSubject($emailSendCheck));
+            $emailSendCheck = $this->createEmailSendReceive();
 
             $message = Swift_Message::newInstance($emailSendCheck->getSubject())
                 ->setFrom($emailSendCheck->getFrom())
@@ -105,27 +93,16 @@ class EmailSendCheck extends AbstractEmailCheck
 
             // Send the message
             try {
-                $failedRecipients = [];
-                $numSent = $this->getMailer()->send($message, $failedRecipients);
-                $this->getMailer()->getTransport()->stop();
+                $this->sendMessage($message, $emailSendCheck);
             } catch (Swift_SwiftException $e) {
                 $emailSendCheck->setStatus(EmailSendReceive::STATUS_SAND_ERROR);
-                $this->getDoctrine()->persist($emailSendCheck);
-                $this->getDoctrine()->flush();
+                $this->saveEmailSendReceive($emailSendCheck);
                 throw EmailSendCheckException::internalProblem($e);
-            }
-
-            if (!$numSent) {
-                $emailSendCheck->setStatus(EmailSendReceive::STATUS_SAND_ERROR);
-                $this->getDoctrine()->persist($emailSendCheck);
-                $this->getDoctrine()->flush();
-                throw EmailSendCheckException::doesNotSendMessage(array_keys($failedRecipients));
             }
 
             $emailSendCheck->setStatus(EmailSendReceive::STATUS_SANDED);
             $emailSendCheck->setSentAt(new DateTime());
-            $this->getDoctrine()->persist($emailSendCheck);
-            $this->getDoctrine()->flush();
+            $this->saveEmailSendReceive($emailSendCheck);
         }
     }
 
@@ -216,5 +193,52 @@ class EmailSendCheck extends AbstractEmailCheck
     protected function setSendInterval($sendInterval)
     {
         $this->sendInterval = $sendInterval;
+    }
+
+    /**
+     * @return EmailSendReceive
+     */
+    protected function createEmailSendReceive()
+    {
+        // Create a message
+        $emailSendCheck = new EmailSendReceive();
+
+        $emailSendCheck->setFrom($this->getFrom());
+        $emailSendCheck->setTo($this->getToSubject());
+        $emailSendCheck->setBody(static::MESSAGE_BODY);
+
+        $this->saveEmailSendReceive($emailSendCheck);
+
+        $emailSendCheck->setSubject($this->genEmailSubject($emailSendCheck));
+
+        $this->saveEmailSendReceive($emailSendCheck);
+
+        return $emailSendCheck;
+    }
+
+    /**
+     * @param Swift_Mime_Message $message
+     * @param EmailSendReceive   $emailSendCheck
+     * @throws EmailSendCheckException
+     */
+    protected function sendMessage(Swift_Mime_Message $message, EmailSendReceive $emailSendCheck)
+    {
+        $failedRecipients = [];
+        $numSent = $this->getMailer()->send($message, $failedRecipients);
+        $this->getMailer()->getTransport()->stop();
+        if (!$numSent) {
+            $emailSendCheck->setStatus(EmailSendReceive::STATUS_SAND_ERROR);
+            $this->saveEmailSendReceive($emailSendCheck);
+            throw EmailSendCheckException::doesNotSendMessage(array_keys($failedRecipients));
+        }
+    }
+
+    /**
+     * @param $emailSendCheck
+     */
+    private function saveEmailSendReceive($emailSendCheck)
+    {
+        $this->getDoctrine()->persist($emailSendCheck);
+        $this->getDoctrine()->flush();
     }
 }
