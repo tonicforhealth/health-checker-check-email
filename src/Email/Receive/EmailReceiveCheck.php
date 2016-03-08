@@ -76,36 +76,12 @@ class EmailReceiveCheck extends AbstractEmailCheck
                     'FROM '.$emailSendCheckI->getFrom().' SUBJECT '.$emailSendCheckI->getSubject()
                 );
                 if (count($mails) > 0) {
-                    foreach ($mails as $mailId) {
-                        $this->getMailbox()->deleteMail($mailId);
-                        $emailSendCheckI->setStatus(EmailSendReceive::STATUS_RECEIVED);
-                        $this->getDoctrine()->persist($emailSendCheckI);
-                        $this->getDoctrine()->flush();
-                    }
-                    $timeLeft = time() - $emailSendCheckI->getSentAt()->getTimestamp();
-                    if ($timeLeft > $this->getReceiveMaxTime()) {
-
-                        $emailSendCheckI->setStatus(EmailSendReceive::STATUS_EXPIRED);
-                        $emailSendCheckI->setReceivedAt(new DateTime());
-                        $this->getDoctrine()->persist($emailSendCheckI);
-                        $this->getDoctrine()->flush();
-
-                        if (!$this->isFirstFailSkip()) {
-                            throw EmailReceiveCheckException::receivingMaxTimeExpire(
-                                $emailSendCheckI->getSubject(),
-                                $timeLeft,
-                                $this->getReceiveMaxTime()
-                            );
-                        } else {
-
-                            $this->setFirstFailSkip(false);
-                        }
-                    }
+                    $this->deleteReceivedEmails($mails, $emailSendCheckI);
+                    $this->timeReceiveCheck($emailSendCheckI);
                 }
             } catch (ImapException $e) {
                 $emailSendCheckI->setStatus(EmailSendReceive::STATUS_RECEIVED_ERROR);
-                $this->getDoctrine()->persist($emailSendCheckI);
-                $this->getDoctrine()->flush();
+                $this->saveEmailSendReceive($emailSendCheckI);
                 throw EmailReceiveCheckException::internalProblem($e);
             }
         }
@@ -173,5 +149,53 @@ class EmailReceiveCheck extends AbstractEmailCheck
     protected function setFirstFailSkip($firstFailSkip)
     {
         $this->firstFailSkip = $firstFailSkip;
+    }
+
+    /**
+     * @param EmailSendReceive $emailSendCheckI
+     * @throws EmailReceiveCheckException
+     */
+    protected function timeReceiveCheck(EmailSendReceive $emailSendCheckI)
+    {
+        $timeLeft = time() - $emailSendCheckI->getSentAt()->getTimestamp();
+        if ($timeLeft > $this->getReceiveMaxTime()) {
+
+            $emailSendCheckI->setStatus(EmailSendReceive::STATUS_EXPIRED);
+            $emailSendCheckI->setReceivedAt(new DateTime());
+            $this->saveEmailSendReceive($emailSendCheckI);
+
+            if (!$this->isFirstFailSkip()) {
+                throw EmailReceiveCheckException::receivingMaxTimeExpire(
+                    $emailSendCheckI->getSubject(),
+                    $timeLeft,
+                    $this->getReceiveMaxTime()
+                );
+            } else {
+
+                $this->setFirstFailSkip(false);
+            }
+        }
+    }
+
+    /**
+     * @param $emailSendCheckI
+     */
+    private function saveEmailSendReceive($emailSendCheckI)
+    {
+        $this->getDoctrine()->persist($emailSendCheckI);
+        $this->getDoctrine()->flush();
+    }
+
+    /**
+     * @param $mails
+     * @param EmailSendReceive $emailSendCheckI
+     */
+    private function deleteReceivedEmails($mails, EmailSendReceive $emailSendCheckI)
+    {
+        foreach ($mails as $mailId) {
+            $this->getMailbox()->deleteMail($mailId);
+            $emailSendCheckI->setStatus(EmailSendReceive::STATUS_RECEIVED);
+            $this->saveEmailSendReceive($emailSendCheckI);
+        }
     }
 }
