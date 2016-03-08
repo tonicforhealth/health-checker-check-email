@@ -7,6 +7,7 @@ use Doctrine\ORM\EntityManager;
 use Swift_Mailer;
 use Swift_Message;
 use Swift_Mime_Message;
+use Swift_Mime_MimePart;
 use Swift_SwiftException;
 use TonicHealthCheck\Check\Email\AbstractEmailCheck;
 use TonicHealthCheck\Check\Email\Entity\EmailSendReceive;
@@ -20,6 +21,7 @@ class EmailSendCheck extends AbstractEmailCheck
     const CHECK = 'email-send-check';
     const MESSAGE_BODY = 'This is a test, you don\'t need to reply this massage.';
     const SEND_INTERVAL = 600;
+    const SUBJECT_TEMPLATE = '%s:#%d';
 
     /**
      * @var int
@@ -86,23 +88,7 @@ class EmailSendCheck extends AbstractEmailCheck
         ) {
             $emailSendCheck = $this->createEmailSendReceive();
 
-            $message = Swift_Message::newInstance($emailSendCheck->getSubject())
-                ->setFrom($emailSendCheck->getFrom())
-                ->setTo($emailSendCheck->getTo())
-                ->setBody($emailSendCheck->getBody());
-
-            // Send the message
-            try {
-                $this->sendMessage($message, $emailSendCheck);
-            } catch (Swift_SwiftException $e) {
-                $emailSendCheck->setStatus(EmailSendReceive::STATUS_SAND_ERROR);
-                $this->saveEmailSendReceive($emailSendCheck);
-                throw EmailSendCheckException::internalProblem($e);
-            }
-
-            $emailSendCheck->setStatus(EmailSendReceive::STATUS_SANDED);
-            $emailSendCheck->setSentAt(new DateTime());
-            $this->saveEmailSendReceive($emailSendCheck);
+            $this->performSend($emailSendCheck);
         }
     }
 
@@ -184,7 +170,7 @@ class EmailSendCheck extends AbstractEmailCheck
      */
     protected function genEmailSubject(EmailSendReceive $emailSendCheck)
     {
-        return sprintf('%s:#%d', $this->getCheckIdent(), $emailSendCheck->getId());
+        return sprintf(static::SUBJECT_TEMPLATE, $this->getCheckIdent(), $emailSendCheck->getId());
     }
 
     /**
@@ -200,7 +186,6 @@ class EmailSendCheck extends AbstractEmailCheck
      */
     protected function createEmailSendReceive()
     {
-        // Create a message
         $emailSendCheck = new EmailSendReceive();
 
         $emailSendCheck->setFrom($this->getFrom());
@@ -235,10 +220,44 @@ class EmailSendCheck extends AbstractEmailCheck
 
     /**
      * @param EmailSendReceive $emailSendCheck
+     * @return Swift_Mime_MimePart
+     */
+    protected function buildMessage(EmailSendReceive $emailSendCheck)
+    {
+        $message = Swift_Message::newInstance($emailSendCheck->getSubject())
+            ->setFrom($emailSendCheck->getFrom())
+            ->setTo($emailSendCheck->getTo())
+            ->setBody($emailSendCheck->getBody());
+
+        return $message;
+    }
+
+    /**
+     * @param EmailSendReceive $emailSendCheck
      */
     private function saveEmailSendReceive(EmailSendReceive $emailSendCheck)
     {
         $this->getDoctrine()->persist($emailSendCheck);
         $this->getDoctrine()->flush();
+    }
+
+    /**
+     * @param EmailSendReceive $emailSendCheck
+     * @throws EmailSendCheckException
+     */
+    private function performSend(EmailSendReceive $emailSendCheck)
+    {
+        $message = $this->buildMessage($emailSendCheck);
+
+        try {
+            $this->sendMessage($message, $emailSendCheck);
+            $emailSendCheck->setStatus(EmailSendReceive::STATUS_SANDED);
+            $emailSendCheck->setSentAt(new DateTime());
+            $this->saveEmailSendReceive($emailSendCheck);
+        } catch (Swift_SwiftException $e) {
+            $emailSendCheck->setStatus(EmailSendReceive::STATUS_SAND_ERROR);
+            $this->saveEmailSendReceive($emailSendCheck);
+            throw EmailSendCheckException::internalProblem($e);
+        }
     }
 }
