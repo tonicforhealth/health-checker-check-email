@@ -71,19 +71,7 @@ class EmailReceiveCheck extends AbstractEmailCheck
         foreach ($emailSendReceiveR->findBy(
             ['status' => EmailSendReceive::STATUS_SANDED]
         ) as $emailSendCheckI) {
-            try {
-                $mails = $this->getMailbox()->searchMailbox(
-                    'FROM '.$emailSendCheckI->getFrom().' SUBJECT '.$emailSendCheckI->getSubject()
-                );
-                if (count($mails) > 0) {
-                    $this->deleteReceivedEmails($mails, $emailSendCheckI);
-                    $this->timeReceiveCheck($emailSendCheckI);
-                }
-            } catch (ImapException $e) {
-                $emailSendCheckI->setStatus(EmailSendReceive::STATUS_RECEIVED_ERROR);
-                $this->saveEmailSendReceive($emailSendCheckI);
-                throw EmailReceiveCheckException::internalProblem($e);
-            }
+            $this->performReceive($emailSendCheckI);
         }
     }
 
@@ -196,6 +184,27 @@ class EmailReceiveCheck extends AbstractEmailCheck
             $this->getMailbox()->deleteMail($mailId);
             $emailSendCheckI->setStatus(EmailSendReceive::STATUS_RECEIVED);
             $this->saveEmailSendReceive($emailSendCheckI);
+        }
+    }
+
+    /**
+     * @param EmailSendReceive $emailSendCheckI
+     * @throws EmailReceiveCheckException
+     */
+    private function performReceive(EmailSendReceive $emailSendCheckI)
+    {
+        try {
+            $mails = $this->getMailbox()->searchMailbox(
+                'FROM '.$emailSendCheckI->getFrom().' SUBJECT '.$emailSendCheckI->getSubject()
+            );
+            if (count($mails) > 0) {
+                $this->deleteReceivedEmails($mails, $emailSendCheckI);
+                $this->timeReceiveCheck($emailSendCheckI);
+            }
+        } catch (ImapException $e) {
+            $emailSendCheckI->setStatus(EmailSendReceive::STATUS_RECEIVED_ERROR);
+            $this->saveEmailSendReceive($emailSendCheckI);
+            throw EmailReceiveCheckException::internalProblem($e);
         }
     }
 }
