@@ -15,7 +15,7 @@ use Doctrine\ORM\Mapping\Table;
  * TonicHealthCheck\Entity\EmailSendReceive;
  *
  * @Entity(repositoryClass="EmailSendReceiveRepository")
- * @Table(name="health_check_email_send_receive")
+ * @Table(name="health_check_email")
  * @HasLifecycleCallbacks
  */
 class EmailSendReceive
