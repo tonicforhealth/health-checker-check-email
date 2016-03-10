@@ -15,7 +15,7 @@ use Doctrine\ORM\Mapping\Table;
  * TonicHealthCheck\Entity\EmailSendReceive;
  *
  * @Entity(repositoryClass="EmailSendReceiveRepository")
- * @Table(name="EmailSendReceive")
+ * @Table(name="health_check_email_send_receive")
  * @HasLifecycleCallbacks
  */
 class EmailSendReceive
@@ -36,13 +36,13 @@ class EmailSendReceive
 
     /**
      * @var DateTimeInterface
-     * @Column(type="datetime", nullable=true)
+     * @Column(type="datetime",name="sent_at", nullable=true)
      */
     private $sentAt;
 
     /**
      * @var DateTimeInterface
-     * @Column(type="datetime", nullable=true)
+     * @Column(type="datetime", name="received_at", nullable=true)
      */
     private $receivedAt;
 
