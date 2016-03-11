@@ -170,7 +170,7 @@ class EmailSendCheck extends AbstractEmailCheck
      */
     protected function genEmailSubject(EmailSendReceive $emailSendCheck)
     {
-        return sprintf(static::SUBJECT_TEMPLATE, $this->getCheckIdent(), $emailSendCheck->getId());
+        return sprintf(static::SUBJECT_TEMPLATE, $this->getIndent(), $emailSendCheck->getId());
     }
 
     /**
