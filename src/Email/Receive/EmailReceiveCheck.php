@@ -197,10 +197,13 @@ class EmailReceiveCheck extends AbstractEmailCheck
             $mails = $this->getMailbox()->searchMailbox(
                 'FROM '.$emailSendCheckI->getFrom().' SUBJECT '.$emailSendCheckI->getSubject()
             );
+
+            $this->timeReceiveCheck($emailSendCheckI);
+
             if (count($mails) > 0) {
                 $this->deleteReceivedEmails($mails, $emailSendCheckI);
-                $this->timeReceiveCheck($emailSendCheckI);
             }
+
         } catch (ImapException $e) {
             $emailSendCheckI->setStatus(EmailSendReceive::STATUS_RECEIVED_ERROR);
             $this->saveEmailSendReceive($emailSendCheckI);
