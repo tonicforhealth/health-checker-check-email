@@ -82,7 +82,7 @@ class SendReceiveCheck implements CheckInterface
      */
     public function getLabel()
     {
-        return 'email.check';
+        return $this->getEmailSendCheck()->getIndent().' <-> '.$this->getEmailReceiveCheck()->getIndent();
     }
 
     /**
