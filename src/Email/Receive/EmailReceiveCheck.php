@@ -223,9 +223,6 @@ class EmailReceiveCheck extends AbstractEmailCheck
 
         } catch (ImapException $e) {
             $emailSendCheckI->setStatus(EmailSendReceive::STATUS_RECEIVED_ERROR);
-            $this->getEmailSendReceiveColl()->remove(
-                $this->findSameItemCallback($emailSendCheckI)
-            );
             $this->getPersistCollection()->flush();
             throw EmailReceiveCheckException::internalProblem($e);
         }

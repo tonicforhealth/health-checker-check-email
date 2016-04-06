@@ -218,7 +218,6 @@ class EmailSendCheck extends AbstractEmailCheck
         $emailSendCheck->setFrom($this->getFrom());
         $emailSendCheck->setTo($this->getToSubject());
         $emailSendCheck->setBody(static::MESSAGE_BODY);
-
         $emailSendCheck->setSubject($this->genEmailSubject());
 
         return $emailSendCheck;
@@ -273,17 +272,13 @@ class EmailSendCheck extends AbstractEmailCheck
         $message = $this->buildMessage($emailSendCheck);
 
         try {
-
-            $this->sendMessage($message, $emailSendCheck);
-
-            $emailSendCheck->setStatus(EmailSendReceive::STATUS_SANDED);
             $emailSendCheck->setSentAt(new DateTime());
-
+            $this->sendMessage($message, $emailSendCheck);
+            $emailSendCheck->setStatus(EmailSendReceive::STATUS_SANDED);
             $this->saveEmailSendReceive($emailSendCheck);
         } catch (Swift_SwiftException $e) {
-
             $emailSendCheck->setStatus(EmailSendReceive::STATUS_SAND_ERROR);
-
+            $this->saveEmailSendReceive($emailSendCheck);
             throw EmailSendCheckException::internalProblem($e);
         }
     }
