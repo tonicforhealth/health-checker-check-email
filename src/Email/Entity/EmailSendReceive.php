@@ -13,10 +13,6 @@ use Doctrine\ORM\Mapping\Table;
 
 /**
  * TonicHealthCheck\Entity\EmailSendReceive;
- *
- * @Entity(repositoryClass="EmailSendReceiveRepository")
- * @Table(name="health_check_email")
- * @HasLifecycleCallbacks
  */
 class EmailSendReceive
 {
@@ -28,58 +24,39 @@ class EmailSendReceive
     const STATUS_EXPIRED = 'expired';
 
     /**
-     * @Id
-     * @Column(type="integer")
-     * @GeneratedValue(strategy="IDENTITY")
-     */
-    private $id;
-
-    /**
      * @var DateTimeInterface
-     * @Column(type="datetime",name="sent_at", nullable=true)
      */
     private $sentAt;
 
     /**
      * @var DateTimeInterface
-     * @Column(type="datetime", name="received_at", nullable=true)
      */
     private $receivedAt;
 
     /**
-     * @Column(type="string", length=512, nullable=true)
+     * @var string
      */
     private $subject;
 
     /**
-     * @Column(type="text")
+     * @var string
      */
     private $body;
 
     /**
-     * @Column(type="string", name="`from`", length=256)
+     * @var string
      */
     private $from;
 
     /**
-     * @Column(type="string", name="`to`", length=256, nullable=true)
+     * @var string
      */
     private $to;
 
     /**
-     * @Column(type="string", length=64)
+     * @var string
      */
     private $status = self::STATUS_CREATED;
-
-    /**
-     * Get id
-     *
-     * @return integer
-     */
-    public function getId()
-    {
-        return $this->id;
-    }
 
     /**
      * Set sentAt

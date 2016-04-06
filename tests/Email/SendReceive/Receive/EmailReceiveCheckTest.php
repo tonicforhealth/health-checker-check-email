@@ -3,14 +3,15 @@
 namespace TonicHealthCheck\Tests\Check\Email\Receive;
 
 use DateTime;
-use Doctrine\ORM\EntityManager;
 use Exception;
 use PhpImap\Mailbox;
 use PHPUnit_Framework_MockObject_MockObject;
 use PHPUnit_Framework_TestCase;
 use TonicHealthCheck\Check\Email\Entity\EmailSendReceive;
-use TonicHealthCheck\Check\Email\Entity\EmailSendReceiveRepository;
+use TonicHealthCheck\Check\Email\Entity\EmailSendReceiveCollection;
 use PhpImap\Exception as ImapException;
+use TonicHealthCheck\Check\Email\Persist\PersistCollectionInterface;
+use TonicHealthCheck\Check\Email\Persist\PersistCollectionToFile;
 use TonicHealthCheck\Check\Email\Receive\EmailReceiveCheck;
 use TonicHealthCheck\Check\Email\Receive\EmailReceiveCheckException;
 
@@ -36,9 +37,9 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
     private $mailbox;
 
     /**
-     * @var PHPUnit_Framework_MockObject_MockObject;
+     * @var PersistCollectionInterface;
      */
-    private $doctrine;
+    private $persistCollection;
 
 
     /**
@@ -48,12 +49,12 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
     {
         $this->setMailbox($this->getMockBuilder(Mailbox::class)->disableOriginalConstructor()->getMock());
 
-        $this->setDoctrine($this->getMockBuilder(EntityManager::class)->disableOriginalConstructor()->getMock());
+        $this->setPersistCollection(new PersistCollectionToFile(sys_get_temp_dir()));
 
         $this->setEmailReceiveCheck(new EmailReceiveCheck(
             'testnode',
             $this->getMailbox(),
-            $this->getDoctrine(),
+            $this->getPersistCollection(),
             300
         ));
 
@@ -134,26 +135,21 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
 
         $this->setUpEntity();
 
-        $exceptionMsg = 'Error msg text';
-        $exceptionCode = 124999;
-
-        $imapException = new ImapException($exceptionMsg, $exceptionCode);
-
         $this
             ->getMailbox()
             ->method('searchMailbox')
-            ->willReturn([1,2,3,4,5]);
+            ->willReturn([1, 2, 3, 4, 5]);
 
         $checkResultFirst = $this->getEmailReceiveCheck()->performCheck();
-
+        $this->setUpEntity();
         $checkResultSecond = $this->getEmailReceiveCheck()->performCheck();
 
         $this->assertTrue($checkResultFirst->isOk());
         $this->assertFalse($checkResultSecond->isOk());
         $this->assertEquals(EmailReceiveCheckException::CODE_RECEIVING_MAX_TIME_EXPIRE, $checkResultSecond->getError()->getCode());
-         $this->assertInstanceOf(
+        $this->assertInstanceOf(
             EmailReceiveCheckException::class,
-             $checkResultSecond->getError()
+            $checkResultSecond->getError()
         );
     }
 
@@ -182,11 +178,11 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @return PHPUnit_Framework_MockObject_MockObject
+     * @return PersistCollectionInterface
      */
-    public function getDoctrine()
+    public function getPersistCollection()
     {
-        return $this->doctrine;
+        return $this->persistCollection;
     }
 
     /**
@@ -222,30 +218,26 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @param PHPUnit_Framework_MockObject_MockObject $doctrine
+     * @param PersistCollectionInterface $persistCollection
      */
-    protected function setDoctrine(PHPUnit_Framework_MockObject_MockObject $doctrine)
+    protected function setPersistCollection(PersistCollectionInterface $persistCollection)
     {
-        $this->doctrine = $doctrine;
+        $this->persistCollection = $persistCollection;
     }
 
     private function setUpEntity()
     {
-        $emailSendReceiveRepository = $this
-            ->getMockBuilder(EmailSendReceiveRepository::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-
-        $this->getDoctrine()->method('getRepository')->willReturn($emailSendReceiveRepository);
-
-        $emailSendReceiveRepository->method('findOneBy')->willReturn(null);
-
 
         $emailSendReceive = new EmailSendReceive();
 
         $emailSendReceive->setSentAt(new DateTime('-1 day'));
 
-        $emailSendReceiveRepository->method('findBy')->willReturn([$emailSendReceive]);
+
+        $emailSendReceiveColl = new EmailSendReceiveCollection();
+        $emailSendReceiveColl->add($emailSendReceive);
+
+        $this->getPersistCollection()->persist($emailSendReceiveColl);
+        $this->getPersistCollection()->flush();
 
     }
 

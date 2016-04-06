@@ -11,6 +11,8 @@ use Swift_Mime_MimePart;
 use Swift_SwiftException;
 use TonicHealthCheck\Check\Email\AbstractEmailCheck;
 use TonicHealthCheck\Check\Email\Entity\EmailSendReceive;
+use TonicHealthCheck\Check\Email\Entity\EmailSendReceiveCollection;
+use TonicHealthCheck\Check\Email\Persist\PersistCollectionInterface;
 
 /**
  * Class EmailSendCheck
@@ -21,7 +23,7 @@ class EmailSendCheck extends AbstractEmailCheck
     const CHECK = 'email-send-check';
     const MESSAGE_BODY = 'This is a test, you don\'t need to reply this massage.';
     const SEND_INTERVAL = 600;
-    const SUBJECT_TEMPLATE = '%s:#%d';
+    const SUBJECT_TEMPLATE = '%s:time:%d';
 
     /**
      * @var int
@@ -34,9 +36,14 @@ class EmailSendCheck extends AbstractEmailCheck
     private $mailer;
 
     /**
-     * @var EntityManager
+     * @var PersistCollectionInterface
      */
-    private $doctrine;
+    private $persistCollection;
+
+    /**
+     * @var EmailSendReceiveCollection
+     */
+    private $emailSendReceiveCollection;
 
     /**
      * @var string;
@@ -59,7 +66,7 @@ class EmailSendCheck extends AbstractEmailCheck
     public function __construct(
         $checkNode,
         Swift_Mailer $mailer,
-        EntityManager $doctrine,
+        PersistCollectionInterface $persistCollection,
         $from,
         $toSubjects,
         $sendInterval = self::SEND_INTERVAL
@@ -67,7 +74,7 @@ class EmailSendCheck extends AbstractEmailCheck
         parent::__construct($checkNode);
 
         $this->setMailer($mailer);
-        $this->setDoctrine($doctrine);
+        $this->setPersistCollection($persistCollection);
         $this->setFrom($from);
         $this->setToSubject($toSubjects);
         $this->setSendInterval($sendInterval);
@@ -80,8 +87,12 @@ class EmailSendCheck extends AbstractEmailCheck
      */
     public function check()
     {
-        $emailSendReceiveR = $this->getDoctrine()->getRepository(EmailSendReceive::class);
-        $lastSandedEmail = $emailSendReceiveR->findOneBy([], ['sentAt' => 'DESC']);
+        $this->setEmailSendReceiveColl($this->getPersistCollection()->load());
+
+
+        $lastSandedEmail = $this->getEmailSendReceiveColl()->at(
+            $this->getEmailSendReceiveColl()->count()-1
+        );
         if (null === $lastSandedEmail
             || empty($lastSandedEmail->getSentAt())
             || (time() - $lastSandedEmail->getSentAt()->getTimestamp()) > $this->getSendInterval()
@@ -101,12 +112,21 @@ class EmailSendCheck extends AbstractEmailCheck
     }
 
     /**
-     * @return EntityManager
+     * @return PersistCollectionInterface
      */
-    public function getDoctrine()
+    public function getPersistCollection()
     {
-        return $this->doctrine;
+        return $this->persistCollection;
     }
+
+    /**
+     * @return EmailSendReceiveCollection
+     */
+    public function getEmailSendReceiveColl()
+    {
+        return $this->emailSendReceiveCollection;
+    }
+
 
     /**
      * @return string
@@ -141,11 +161,19 @@ class EmailSendCheck extends AbstractEmailCheck
     }
 
     /**
-     * @param EntityManager $doctrine
+     * @param PersistCollectionInterface $persistCollection
      */
-    protected function setDoctrine(EntityManager $doctrine)
+    protected function setPersistCollection(PersistCollectionInterface $persistCollection)
     {
-        $this->doctrine = $doctrine;
+        $this->persistCollection = $persistCollection;
+    }
+
+    /**
+     * @param EmailSendReceiveCollection $emailSendReceiveC
+     */
+    protected function setEmailSendReceiveColl(EmailSendReceiveCollection $emailSendReceiveC)
+    {
+        $this->emailSendReceiveCollection = $emailSendReceiveC;
     }
 
     /**
@@ -165,12 +193,11 @@ class EmailSendCheck extends AbstractEmailCheck
     }
 
     /**
-     * @param EmailSendReceive $emailSendCheck
      * @return string
      */
-    protected function genEmailSubject(EmailSendReceive $emailSendCheck)
+    protected function genEmailSubject()
     {
-        return sprintf(static::SUBJECT_TEMPLATE, $this->getIndent(), $emailSendCheck->getId());
+        return sprintf(static::SUBJECT_TEMPLATE, $this->getIndent(), date(DATE_RFC2822));
     }
 
     /**
@@ -192,11 +219,7 @@ class EmailSendCheck extends AbstractEmailCheck
         $emailSendCheck->setTo($this->getToSubject());
         $emailSendCheck->setBody(static::MESSAGE_BODY);
 
-        $this->saveEmailSendReceive($emailSendCheck);
-
-        $emailSendCheck->setSubject($this->genEmailSubject($emailSendCheck));
-
-        $this->saveEmailSendReceive($emailSendCheck);
+        $emailSendCheck->setSubject($this->genEmailSubject());
 
         return $emailSendCheck;
     }
@@ -213,7 +236,6 @@ class EmailSendCheck extends AbstractEmailCheck
         $this->getMailer()->getTransport()->stop();
         if (!$numSent) {
             $emailSendCheck->setStatus(EmailSendReceive::STATUS_SAND_ERROR);
-            $this->saveEmailSendReceive($emailSendCheck);
             throw EmailSendCheckException::doesNotSendMessage(array_keys($failedRecipients));
         }
     }
@@ -237,8 +259,9 @@ class EmailSendCheck extends AbstractEmailCheck
      */
     private function saveEmailSendReceive(EmailSendReceive $emailSendCheck)
     {
-        $this->getDoctrine()->persist($emailSendCheck);
-        $this->getDoctrine()->flush();
+
+        $this->getEmailSendReceiveColl()->add($emailSendCheck);
+        $this->getPersistCollection()->flush();
     }
 
     /**
@@ -250,13 +273,17 @@ class EmailSendCheck extends AbstractEmailCheck
         $message = $this->buildMessage($emailSendCheck);
 
         try {
+
             $this->sendMessage($message, $emailSendCheck);
+
             $emailSendCheck->setStatus(EmailSendReceive::STATUS_SANDED);
             $emailSendCheck->setSentAt(new DateTime());
+
             $this->saveEmailSendReceive($emailSendCheck);
         } catch (Swift_SwiftException $e) {
+
             $emailSendCheck->setStatus(EmailSendReceive::STATUS_SAND_ERROR);
-            $this->saveEmailSendReceive($emailSendCheck);
+
             throw EmailSendCheckException::internalProblem($e);
         }
     }

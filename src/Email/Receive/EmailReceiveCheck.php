@@ -8,6 +8,8 @@ use PhpImap\Mailbox;
 use TonicHealthCheck\Check\Email\AbstractEmailCheck;
 use TonicHealthCheck\Check\Email\Entity\EmailSendReceive;
 use PhpImap\Exception as ImapException;
+use TonicHealthCheck\Check\Email\Entity\EmailSendReceiveCollection;
+use TonicHealthCheck\Check\Email\Persist\PersistCollectionInterface;
 
 /**
  * Class EmailReceiveCheck
@@ -35,26 +37,31 @@ class EmailReceiveCheck extends AbstractEmailCheck
 
 
     /**
-     * @var EntityManager
+     * @var PersistCollectionInterface
      */
-    private $doctrine;
+    private $persistCollection;
 
     /**
-     * @param string        $checkNode
-     * @param Mailbox       $mailbox
-     * @param EntityManager $doctrine
-     * @param int           $receiveMaxTime
+     * @var EmailSendReceiveCollection
+     */
+    private $emailSendReceiveCollection;
+
+    /**
+     * @param string                     $checkNode
+     * @param Mailbox                    $mailbox
+     * @param PersistCollectionInterface $persistCollection
+     * @param int                        $receiveMaxTime
      */
     public function __construct(
         $checkNode,
         Mailbox $mailbox,
-        EntityManager $doctrine,
+        PersistCollectionInterface $persistCollection,
         $receiveMaxTime = self::RECEIVE_MAX_TIME
     ) {
         parent::__construct($checkNode);
 
         $this->setMailbox($mailbox);
-        $this->setDoctrine($doctrine);
+        $this->setPersistCollection($persistCollection);
         $this->setReceiveMaxTime($receiveMaxTime);
     }
 
@@ -65,12 +72,10 @@ class EmailReceiveCheck extends AbstractEmailCheck
      */
     public function check()
     {
-        $emailSendReceiveR = $this->getDoctrine()->getRepository(EmailSendReceive::class);
+        $this->setEmailSendReceiveColl($this->getPersistCollection()->load());
 
         /** @var EmailSendReceive $emailSendCheckI */
-        foreach ($emailSendReceiveR->findBy(
-            ['status' => EmailSendReceive::STATUS_SANDED]
-        ) as $emailSendCheckI) {
+        foreach ($this->getEmailSendReceiveColl() as $emailSendCheckI) {
             $this->performReceive($emailSendCheckI);
         }
     }
@@ -84,11 +89,11 @@ class EmailReceiveCheck extends AbstractEmailCheck
     }
 
     /**
-     * @return EntityManager
+     * @return PersistCollectionInterface
      */
-    public function getDoctrine()
+    public function getPersistCollection()
     {
-        return $this->doctrine;
+        return $this->persistCollection;
     }
 
     /**
@@ -97,6 +102,14 @@ class EmailReceiveCheck extends AbstractEmailCheck
     public function getReceiveMaxTime()
     {
         return $this->receiveMaxTime;
+    }
+
+    /**
+     * @return EmailSendReceiveCollection
+     */
+    public function getEmailSendReceiveColl()
+    {
+        return $this->emailSendReceiveCollection;
     }
 
     /**
@@ -116,11 +129,11 @@ class EmailReceiveCheck extends AbstractEmailCheck
     }
 
     /**
-     * @param EntityManager $doctrine
+     * @param PersistCollectionInterface $persistCollection
      */
-    protected function setDoctrine(EntityManager $doctrine)
+    protected function setPersistCollection(PersistCollectionInterface $persistCollection)
     {
-        $this->doctrine = $doctrine;
+        $this->persistCollection = $persistCollection;
     }
 
     /**
@@ -140,6 +153,14 @@ class EmailReceiveCheck extends AbstractEmailCheck
     }
 
     /**
+     * @param EmailSendReceiveCollection $emailSendReceiveC
+     */
+    protected function setEmailSendReceiveColl(EmailSendReceiveCollection $emailSendReceiveC)
+    {
+        $this->emailSendReceiveCollection = $emailSendReceiveC;
+    }
+
+    /**
      * @param EmailSendReceive $emailSendCheckI
      * @throws EmailReceiveCheckException
      */
@@ -150,7 +171,10 @@ class EmailReceiveCheck extends AbstractEmailCheck
 
             $emailSendCheckI->setStatus(EmailSendReceive::STATUS_EXPIRED);
             $emailSendCheckI->setReceivedAt(new DateTime());
-            $this->saveEmailSendReceive($emailSendCheckI);
+            $this->getEmailSendReceiveColl()->remove(
+                $this->findSameItemCallback($emailSendCheckI)
+            );
+            $this->getPersistCollection()->flush();
 
             if (!$this->isFirstFailSkip()) {
                 throw EmailReceiveCheckException::receivingMaxTimeExpire(
@@ -159,19 +183,9 @@ class EmailReceiveCheck extends AbstractEmailCheck
                     $this->getReceiveMaxTime()
                 );
             } else {
-
                 $this->setFirstFailSkip(false);
             }
         }
-    }
-
-    /**
-     * @param EmailSendReceive $emailSendCheckI
-     */
-    private function saveEmailSendReceive(EmailSendReceive $emailSendCheckI)
-    {
-        $this->getDoctrine()->persist($emailSendCheckI);
-        $this->getDoctrine()->flush();
     }
 
     /**
@@ -183,7 +197,10 @@ class EmailReceiveCheck extends AbstractEmailCheck
         foreach ($mails as $mailId) {
             $this->getMailbox()->deleteMail($mailId);
             $emailSendCheckI->setStatus(EmailSendReceive::STATUS_RECEIVED);
-            $this->saveEmailSendReceive($emailSendCheckI);
+            $this->getEmailSendReceiveColl()->remove(
+                $this->findSameItemCallback($emailSendCheckI)
+            );
+            $this->getPersistCollection()->flush();
         }
     }
 
@@ -206,8 +223,22 @@ class EmailReceiveCheck extends AbstractEmailCheck
 
         } catch (ImapException $e) {
             $emailSendCheckI->setStatus(EmailSendReceive::STATUS_RECEIVED_ERROR);
-            $this->saveEmailSendReceive($emailSendCheckI);
+            $this->getEmailSendReceiveColl()->remove(
+                $this->findSameItemCallback($emailSendCheckI)
+            );
+            $this->getPersistCollection()->flush();
             throw EmailReceiveCheckException::internalProblem($e);
         }
+    }
+
+    /**
+     * @param EmailSendReceive $emailSendCheckI
+     * @return \Closure
+     */
+    private function findSameItemCallback(EmailSendReceive $emailSendCheckI)
+    {
+        return function (EmailSendReceive $emailSendCheckItem) use ($emailSendCheckI) {
+            return $emailSendCheckItem === $emailSendCheckI;
+        };
     }
 }

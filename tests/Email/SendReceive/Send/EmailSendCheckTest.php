@@ -3,7 +3,6 @@
 namespace TonicHealthCheck\Tests\Check\Email\Send;
 
 use DateTime;
-use Doctrine\ORM\EntityManager;
 use Exception;
 use PHPUnit_Framework_MockObject_MockObject;
 use PHPUnit_Framework_TestCase;
@@ -12,7 +11,9 @@ use Swift_Mime_Message;
 use Swift_SmtpTransport;
 use Swift_SwiftException;
 use TonicHealthCheck\Check\Email\Entity\EmailSendReceive;
-use TonicHealthCheck\Check\Email\Entity\EmailSendReceiveRepository;
+use TonicHealthCheck\Check\Email\Entity\EmailSendReceiveCollection;
+use TonicHealthCheck\Check\Email\Persist\PersistCollectionInterface;
+use TonicHealthCheck\Check\Email\Persist\PersistCollectionToFile;
 use TonicHealthCheck\Check\Email\Send\EmailSendCheck;
 use TonicHealthCheck\Check\Email\Send\EmailSendCheckException;
 
@@ -38,9 +39,9 @@ class EmailSendCheckTest extends PHPUnit_Framework_TestCase
     private $mailer;
 
     /**
-     * @var PHPUnit_Framework_MockObject_MockObject;
+     * @var PersistCollectionInterface;
      */
-    private $doctrine;
+    private $persistCollection;
 
 
     /**
@@ -50,7 +51,8 @@ class EmailSendCheckTest extends PHPUnit_Framework_TestCase
     {
         $this->setTransport($this->getMockBuilder(Swift_SmtpTransport::class)->getMock());
 
-        $this->setMailer($this->getMockBuilder(Swift_Mailer::class)
+        $this->setMailer(
+            $this->getMockBuilder(Swift_Mailer::class)
             ->disableOriginalConstructor()
             ->getMock()
         );
@@ -60,12 +62,12 @@ class EmailSendCheckTest extends PHPUnit_Framework_TestCase
             ->method('getTransport')
             ->willReturn($this->getTransport());
 
-        $this->setDoctrine($this->getMockBuilder(EntityManager::class)->disableOriginalConstructor()->getMock());
+        $this->setPersistCollection(new PersistCollectionToFile(sys_get_temp_dir()));
 
         $this->setEmailSendCheck(new EmailSendCheck(
             'testnode',
             $this->getMailer(),
-            $this->getDoctrine(),
+            $this->getPersistCollection(),
             'test@test.com',
             'to_test@test.com',
             600
@@ -198,11 +200,11 @@ class EmailSendCheckTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @return PHPUnit_Framework_MockObject_MockObject
+     * @return PersistCollectionInterface
      */
-    public function getDoctrine()
+    public function getPersistCollection()
     {
-        return $this->doctrine;
+        return $this->persistCollection;
     }
 
     /**
@@ -230,29 +232,27 @@ class EmailSendCheckTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @param PHPUnit_Framework_MockObject_MockObject $doctrine
+     * @param PersistCollectionInterface $persistCollection
      */
-    protected function setDoctrine(PHPUnit_Framework_MockObject_MockObject $doctrine)
+    protected function setPersistCollection(PersistCollectionInterface $persistCollection)
     {
-        $this->doctrine = $doctrine;
+        $this->persistCollection = $persistCollection;
     }
 
+    /**
+     * set up entity
+     */
     private function setUpEntity()
     {
-        $emailSendReceiveRepository = $this
-            ->getMockBuilder(EmailSendReceiveRepository::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-
-        $this->getDoctrine()->method('getRepository')->willReturn($emailSendReceiveRepository);
-
         $emailSendReceive = new EmailSendReceive();
 
         $emailSendReceive->setSentAt(new DateTime('-1 day'));
 
-        $emailSendReceiveRepository->method('findOneBy')->willReturn($emailSendReceive);
+        $emailSendReceiveColl = new EmailSendReceiveCollection();
+        $emailSendReceiveColl->add($emailSendReceive);
 
-        $emailSendReceiveRepository->method('findBy')->willReturn([$emailSendReceive]);
+        $this->getPersistCollection()->persist($emailSendReceiveColl);
+        $this->getPersistCollection()->flush();
 
     }
 
