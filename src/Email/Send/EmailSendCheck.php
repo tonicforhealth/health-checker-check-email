@@ -3,7 +3,6 @@
 namespace TonicHealthCheck\Check\Email\Send;
 
 use DateTime;
-use Doctrine\ORM\EntityManager;
 use Swift_Mailer;
 use Swift_Message;
 use Swift_Mime_Message;
@@ -58,7 +57,6 @@ class EmailSendCheck extends AbstractEmailCheck
     /**
      * @param string        $checkNode
      * @param Swift_Mailer  $mailer
-     * @param EntityManager $doctrine
      * @param string        $from
      * @param string        $toSubjects
      * @param int           $sendInterval
