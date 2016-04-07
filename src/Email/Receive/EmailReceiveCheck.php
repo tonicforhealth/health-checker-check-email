@@ -21,11 +21,6 @@ class EmailReceiveCheck extends AbstractEmailCheck
     const RECEIVE_MAX_TIME = 300;
 
     /**
-     * @var bool
-     */
-    private $firstFailSkip = true;
-
-    /**
      * @var int
      */
     private $receiveMaxTime;
@@ -113,14 +108,6 @@ class EmailReceiveCheck extends AbstractEmailCheck
     }
 
     /**
-     * @return boolean
-     */
-    public function isFirstFailSkip()
-    {
-        return $this->firstFailSkip;
-    }
-
-    /**
      * @param Mailbox $mailbox
      */
     protected function setMailbox(Mailbox $mailbox)
@@ -142,14 +129,6 @@ class EmailReceiveCheck extends AbstractEmailCheck
     protected function setReceiveMaxTime($receiveMaxTime)
     {
         $this->receiveMaxTime = $receiveMaxTime;
-    }
-
-    /**
-     * @param boolean $firstFailSkip
-     */
-    protected function setFirstFailSkip($firstFailSkip)
-    {
-        $this->firstFailSkip = $firstFailSkip;
     }
 
     /**
@@ -175,16 +154,11 @@ class EmailReceiveCheck extends AbstractEmailCheck
                 $this->findSameItemCallback($emailSendCheckI)
             );
             $this->getPersistCollection()->flush();
-
-            if (!$this->isFirstFailSkip()) {
                 throw EmailReceiveCheckException::receivingMaxTimeExpire(
                     $emailSendCheckI->getSubject(),
                     $timeLeft,
                     $this->getReceiveMaxTime()
                 );
-            } else {
-                $this->setFirstFailSkip(false);
-            }
         }
     }
 

@@ -66,7 +66,7 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
      */
     public function testCheckIsOk()
     {
-        $this->setUpEntity();
+        $this->setUpEntity('now');
 
         $this->setUpGetMailBoxMock();
 
@@ -133,7 +133,7 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
     public function testThrowReceivingMaxTimeExpireException()
     {
 
-        $this->setUpEntity();
+        $this->setUpEntity('now');
 
         $this
             ->getMailbox()
@@ -225,12 +225,12 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
         $this->persistCollection = $persistCollection;
     }
 
-    private function setUpEntity()
+    private function setUpEntity($sentAt = '-1 day')
     {
 
         $emailSendReceive = new EmailSendReceive();
 
-        $emailSendReceive->setSentAt(new DateTime('-1 day'));
+        $emailSendReceive->setSentAt(new DateTime($sentAt));
 
 
         $emailSendReceiveColl = new EmailSendReceiveCollection();

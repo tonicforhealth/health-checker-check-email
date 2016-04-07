@@ -133,7 +133,7 @@ class SendReceiveCheckTest extends PHPUnit_Framework_TestCase
      */
     public function testCheckIsOk()
     {
-        $this->setUpEntity();
+        $this->setUpEntity('now');
         $this->setUpSendMock();
         $this->setUpGetMailBoxMock();
         $result = $this->getSendReceiveCheck()->check();
@@ -308,12 +308,12 @@ class SendReceiveCheckTest extends PHPUnit_Framework_TestCase
         $this->sendReceiveCheck = $sendReceiveCheck;
     }
 
-    private function setUpEntity()
+    private function setUpEntity($sentAt = '-1 day')
     {
 
         $emailSendReceive = new EmailSendReceive();
 
-        $emailSendReceive->setSentAt(new DateTime('-1 day'));
+        $emailSendReceive->setSentAt(new DateTime($sentAt));
 
 
         $emailSendReceiveColl = new EmailSendReceiveCollection();
