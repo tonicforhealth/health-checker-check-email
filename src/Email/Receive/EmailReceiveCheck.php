@@ -186,7 +186,7 @@ class EmailReceiveCheck extends AbstractEmailCheck
     {
         try {
             $mails = $this->getMailbox()->searchMailbox(
-                'FROM '.$emailSendCheckI->getFrom().' SUBJECT '.$emailSendCheckI->getSubject()
+                'FROM '.$emailSendCheckI->getFrom().' SUBJECT "'.$emailSendCheckI->getSubject().'"'
             );
 
             $this->timeReceiveCheck($emailSendCheckI);

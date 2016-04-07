@@ -22,7 +22,7 @@ class EmailSendCheck extends AbstractEmailCheck
     const CHECK = 'email-send-check';
     const MESSAGE_BODY = 'This is a test, you don\'t need to reply this massage.';
     const SEND_INTERVAL = 600;
-    const SUBJECT_TEMPLATE = '%s:time:%d';
+    const SUBJECT_TEMPLATE = '%s:time:%s';
 
     /**
      * @var int
@@ -88,9 +88,12 @@ class EmailSendCheck extends AbstractEmailCheck
         $this->setEmailSendReceiveColl($this->getPersistCollection()->load());
 
 
-        $lastSandedEmail = $this->getEmailSendReceiveColl()->at(
-            $this->getEmailSendReceiveColl()->count()-1
-        );
+
+        $lastSandedEmail = $this->getEmailSendReceiveColl()->count()-1 >=0 ?
+            $this->getEmailSendReceiveColl()->at(
+                $this->getEmailSendReceiveColl()->count()-1
+            )
+            :null;
         if (null === $lastSandedEmail
             || empty($lastSandedEmail->getSentAt())
             || (time() - $lastSandedEmail->getSentAt()->getTimestamp()) > $this->getSendInterval()
@@ -195,7 +198,7 @@ class EmailSendCheck extends AbstractEmailCheck
      */
     protected function genEmailSubject()
     {
-        return sprintf(static::SUBJECT_TEMPLATE, $this->getIndent(), date(DATE_RFC2822));
+        return sprintf(static::SUBJECT_TEMPLATE, $this->getIndent(), date(DATE_W3C));
     }
 
     /**

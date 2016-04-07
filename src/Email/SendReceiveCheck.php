@@ -65,9 +65,9 @@ class SendReceiveCheck implements CheckInterface
         $resultReceive = $this->emailCheck($this->getEmailReceiveCheck(), self::EMAIL_RECEIVE_CHECK_MSG);
 
         if (! $resultSend->isOk()) {
-            $result = new Failure($resultSend->getError());
+            $result = new Failure($resultSend->getError()->getMessage(), $resultSend->getError());
         } elseif (! $resultReceive->isOk()) {
-            $result = new Failure($resultReceive->getError());
+            $result = new Failure($resultReceive->getError()->getMessage(), $resultReceive->getError());
         } else {
             $result = new Success();
         }
