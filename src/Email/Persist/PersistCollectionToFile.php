@@ -33,8 +33,11 @@ class PersistCollectionToFile implements PersistCollectionInterface
      * @param null|string $saveFileName
      * @throws PersistCollectionToFileException
      */
-    public function __construct($savePath, $saveFileName = null)
+    public function __construct($savePath = null, $saveFileName = null)
     {
+        if (null === $savePath) {
+            $savePath = sys_get_temp_dir();
+        }
         $this->setSavePath($savePath);
 
         if (null !== $saveFileName) {
