@@ -14,6 +14,7 @@ use TonicHealthCheck\Check\Email\Persist\PersistCollectionInterface;
 use TonicHealthCheck\Check\Email\Persist\PersistCollectionToFile;
 use TonicHealthCheck\Check\Email\Receive\EmailReceiveCheck;
 use TonicHealthCheck\Check\Email\Receive\EmailReceiveCheckException;
+use TonicHealthCheck\Check\Email\Send\EmailSendCheck;
 
 /**
  * Class EmailReceiveCheckTest
@@ -231,6 +232,7 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
         $emailSendReceive = new EmailSendReceive();
 
         $emailSendReceive->setSentAt(new DateTime($sentAt));
+        $emailSendReceive->setStatus(EmailSendReceive::STATUS_SANDED);
 
 
         $emailSendReceiveColl = new EmailSendReceiveCollection();

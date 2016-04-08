@@ -24,6 +24,17 @@ class PersistCollectionToFileTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * test constructor with null
+     */
+    public function testConstructorWithNULL()
+    {
+        $testP = new PersistCollectionToFile();
+
+        $this->assertStringStartsWith(sys_get_temp_dir(), $testP->getDataFilePath());
+
+    }
+
+    /**
      * test file for save not exist created empty collection
      */
     public function testLoadNotExistFile()
