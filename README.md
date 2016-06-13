@@ -1,8 +1,10 @@
 # health-checker-check-email
-
+[![License](https://img.shields.io/github/license/tonicforhealth/health-checker-check-email.svg?maxAge=2592000)](LICENSE.md)
+[![Build Status](https://travis-ci.org/tonicforhealth/health-checker-check-email.svg?branch=master)](https://travis-ci.org/tonicforhealth/health-checker-check-email)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/tonicforhealth/health-checker-check-email/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/tonicforhealth/health-checker-check-email/?branch=master)
 [![Code Coverage](https://scrutinizer-ci.com/g/tonicforhealth/health-checker-check-email/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/tonicforhealth/health-checker-check-email/?branch=master)
-[![Build Status](https://scrutinizer-ci.com/g/tonicforhealth/health-checker-check-email/badges/build.png?b=master)](https://scrutinizer-ci.com/g/tonicforhealth/health-checker-check-email/build-status/master)
+[![SensioLabsInsight](https://insight.sensiolabs.com/projects/dbdd6fb4-c633-4224-9067-122ea6608046/mini.png)](https://insight.sensiolabs.com/projects/dbdd6fb4-c633-4224-9067-122ea6608046)
+
 
 This is a component for checking email send&receive from smtp service point to imap inbox point.
 
