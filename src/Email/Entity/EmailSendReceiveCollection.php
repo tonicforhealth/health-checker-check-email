@@ -5,7 +5,8 @@ namespace TonicHealthCheck\Check\Email\Entity;
 use Collections\Collection;
 
 /**
- * TonicHealthCheck\Entity\EmailSendReceiveCollection;
+ * Class EmailSendReceiveCollection
+ * @package TonicHealthCheck\Check\Email\Entity
  */
 class EmailSendReceiveCollection extends Collection
 {
