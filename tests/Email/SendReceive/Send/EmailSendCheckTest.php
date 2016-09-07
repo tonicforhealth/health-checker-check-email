@@ -18,8 +18,7 @@ use TonicHealthCheck\Check\Email\Send\EmailSendCheck;
 use TonicHealthCheck\Check\Email\Send\EmailSendCheckException;
 
 /**
- * Class EmailSendCheckTest
- * @package TonicHealthCheck\Tests\Elasticsearch\GetDocument
+ * Class EmailSendCheckTest.
  */
 class EmailSendCheckTest extends PHPUnit_Framework_TestCase
 {
@@ -43,9 +42,8 @@ class EmailSendCheckTest extends PHPUnit_Framework_TestCase
      */
     private $persistCollection;
 
-
     /**
-     * set up
+     * set up.
      */
     public function setUp()
     {
@@ -77,7 +75,7 @@ class EmailSendCheckTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Test is ok
+     * Test is ok.
      */
     public function testCheckIsOk()
     {
@@ -85,20 +83,18 @@ class EmailSendCheckTest extends PHPUnit_Framework_TestCase
 
         $this->setUpSendMock();
 
-
-        $checkResult = $this->getEmailSendCheck()->performCheck();
+        $checkResult = $this->getEmailSendCheck()->check();
 
         $this->assertTrue($checkResult->isOk());
         $this->assertNull($checkResult->getError());
     }
 
     /**
-     * Test is fail
+     * Test is fail.
      */
     public function testSendIsFail()
     {
         $this->setUpEntity();
-
 
         $this
             ->getMailer()
@@ -111,7 +107,7 @@ class EmailSendCheckTest extends PHPUnit_Framework_TestCase
                 }
             );
 
-        $checkResult = $this->getEmailSendCheck()->performCheck();
+        $checkResult = $this->getEmailSendCheck()->check();
 
         $this->assertFalse($checkResult->isOk());
         $this->assertInstanceOf(
@@ -125,7 +121,7 @@ class EmailSendCheckTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Test is fail with exception
+     * Test is fail with exception.
      */
     public function testSendThrowException()
     {
@@ -141,7 +137,7 @@ class EmailSendCheckTest extends PHPUnit_Framework_TestCase
             ->method('send')
             ->willThrowException($swiftSwiftException);
 
-        $checkResult = $this->getEmailSendCheck()->performCheck();
+        $checkResult = $this->getEmailSendCheck()->check();
 
         $this->assertFalse($checkResult->isOk());
         $this->assertEquals(EmailSendCheckException::CODE_INTERNAL_PROBLE, $checkResult->getError()->getCode());
@@ -240,7 +236,7 @@ class EmailSendCheckTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * set up entity
+     * set up entity.
      */
     private function setUpEntity()
     {
@@ -253,7 +249,6 @@ class EmailSendCheckTest extends PHPUnit_Framework_TestCase
 
         $this->getPersistCollection()->persist($emailSendReceiveColl);
         $this->getPersistCollection()->flush();
-
     }
 
     private function setUpSendMock()

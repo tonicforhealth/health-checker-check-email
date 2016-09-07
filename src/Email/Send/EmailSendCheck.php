@@ -14,8 +14,7 @@ use TonicHealthCheck\Check\Email\Entity\EmailSendReceiveCollection;
 use TonicHealthCheck\Check\Email\Persist\PersistCollectionInterface;
 
 /**
- * Class EmailSendCheck
- * @package TonicHealthCheck\Check\Email\Send
+ * Class EmailSendCheck.
  */
 class EmailSendCheck extends AbstractEmailCheck
 {
@@ -30,7 +29,7 @@ class EmailSendCheck extends AbstractEmailCheck
     private $sendInterval;
 
     /**
-     * @var Swift_Mailer $client
+     * @var Swift_Mailer
      */
     private $mailer;
 
@@ -55,11 +54,11 @@ class EmailSendCheck extends AbstractEmailCheck
     private $toSubject;
 
     /**
-     * @param string        $checkNode
-     * @param Swift_Mailer  $mailer
-     * @param string        $from
-     * @param string        $toSubjects
-     * @param int           $sendInterval
+     * @param string       $checkNode
+     * @param Swift_Mailer $mailer
+     * @param string       $from
+     * @param string       $toSubjects
+     * @param int          $sendInterval
      */
     public function __construct(
         $checkNode,
@@ -79,21 +78,21 @@ class EmailSendCheck extends AbstractEmailCheck
     }
 
     /**
-     * Check email can send and receive messages
-     * @return bool|void
+     * Check email can send and receive messages.
+     *
+     * @return void
+     *
      * @throws EmailSendCheckException
      */
-    public function check()
+    public function performCheck()
     {
         $this->setEmailSendReceiveColl($this->getPersistCollection()->load());
 
-
-
-        $lastSandedEmail = $this->getEmailSendReceiveColl()->count()-1 >=0 ?
+        $lastSandedEmail = $this->getEmailSendReceiveColl()->count() - 1 >= 0 ?
             $this->getEmailSendReceiveColl()->at(
-                $this->getEmailSendReceiveColl()->count()-1
+                $this->getEmailSendReceiveColl()->count() - 1
             )
-            :null;
+            : null;
         if (null === $lastSandedEmail
             || empty($lastSandedEmail->getSentAt())
             || (time() - $lastSandedEmail->getSentAt()->getTimestamp()) > $this->getSendInterval()
@@ -127,7 +126,6 @@ class EmailSendCheck extends AbstractEmailCheck
     {
         return $this->emailSendReceiveCollection;
     }
-
 
     /**
      * @return string
@@ -227,6 +225,7 @@ class EmailSendCheck extends AbstractEmailCheck
     /**
      * @param Swift_Mime_Message $message
      * @param EmailSendReceive   $emailSendCheck
+     *
      * @throws EmailSendCheckException
      */
     protected function sendMessage(Swift_Mime_Message $message, EmailSendReceive $emailSendCheck)
@@ -242,6 +241,7 @@ class EmailSendCheck extends AbstractEmailCheck
 
     /**
      * @param EmailSendReceive $emailSendCheck
+     *
      * @return Swift_Mime_MimePart
      */
     protected function buildMessage(EmailSendReceive $emailSendCheck)
@@ -259,13 +259,13 @@ class EmailSendCheck extends AbstractEmailCheck
      */
     private function saveEmailSendReceive(EmailSendReceive $emailSendCheck)
     {
-
         $this->getEmailSendReceiveColl()->add($emailSendCheck);
         $this->getPersistCollection()->flush();
     }
 
     /**
      * @param EmailSendReceive $emailSendCheck
+     *
      * @throws EmailSendCheckException
      */
     private function performSend(EmailSendReceive $emailSendCheck)

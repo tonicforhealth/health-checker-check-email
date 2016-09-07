@@ -2,20 +2,17 @@
 
 namespace TonicHealthCheck\Check\Email;
 
+use Exception;
 use Psr\Log\LoggerInterface;
-use TonicHealthCheck\Check\CheckInterface as HCCheckInterface;
-use TonicHealthCheck\Check\CheckResult;
+use TonicHealthCheck\Check\CheckInterface;
 use TonicHealthCheck\Check\Email\Receive\EmailReceiveCheck;
 use TonicHealthCheck\Check\Email\Send\EmailSendCheck;
-use ZendDiagnostics\Check\CheckInterface;
-use ZendDiagnostics\Result\Failure;
-use ZendDiagnostics\Result\ResultInterface;
-use ZendDiagnostics\Result\Success;
+use TonicHealthCheck\Check\ResultInterface;
 
 /**
- * Class SendReceiveCheck
+ * Class SendReceiveCheck.
  */
-class SendReceiveCheck implements CheckInterface
+class SendReceiveCheck extends AbstractEmailCheck
 {
     const EMAIL_SEND_CHECK_MSG = '%s:Email send check %s';
     const EMAIL_RECEIVE_CHECK_MSG = '%s:Email receive check %s';
@@ -39,7 +36,8 @@ class SendReceiveCheck implements CheckInterface
     private $emailReceiveCheck;
 
     /**
-     * Init Dependency
+     * Init Dependency.
+     *
      * @param LoggerInterface   $healthCheckerLogger
      * @param EmailSendCheck    $emailSendCheck
      * @param EmailReceiveCheck $emailReceiveCheck
@@ -55,24 +53,16 @@ class SendReceiveCheck implements CheckInterface
     }
 
     /**
-     * Check email send&receive
+     * Check email send&receive.
      *
      * @return ResultInterface
+     *
+     * @throws Exception
      */
-    public function check()
+    public function performCheck()
     {
-        $resultSend = $this->emailCheck($this->getEmailSendCheck(), self::EMAIL_SEND_CHECK_MSG);
-        $resultReceive = $this->emailCheck($this->getEmailReceiveCheck(), self::EMAIL_RECEIVE_CHECK_MSG);
-
-        if (! $resultSend->isOk()) {
-            $result = new Failure($resultSend->getError()->getMessage(), $resultSend->getError());
-        } elseif (! $resultReceive->isOk()) {
-            $result = new Failure($resultReceive->getError()->getMessage(), $resultReceive->getError());
-        } else {
-            $result = new Success();
-        }
-
-        return $result;
+        $this->emailCheck($this->getEmailSendCheck(), self::EMAIL_SEND_CHECK_MSG);
+        $this->emailCheck($this->getEmailReceiveCheck(), self::EMAIL_RECEIVE_CHECK_MSG);
     }
 
     /**
@@ -134,22 +124,20 @@ class SendReceiveCheck implements CheckInterface
     }
 
     /**
-     * @param HCCheckInterface $emailCheck
-     * @param string         $checkMsg
+     * @param CheckInterface $emailCheck
+     * @param string           $checkMsg
      *
-     * @return CheckResult
+     * @throws Exception
      */
-    private function emailCheck(HCCheckInterface $emailCheck, $checkMsg)
+    private function emailCheck(CheckInterface $emailCheck, $checkMsg)
     {
-        $receiveCheckResult = $emailCheck->performCheck();
-        $checkIndent = $emailCheck->getIndent();
-        if ($receiveCheckResult->isOk()) {
-            $this->logSuccessCheck($checkMsg, $checkIndent, self::CHECK_OK);
-        } else {
-            $this->logFailCheck($checkMsg, $checkIndent, $receiveCheckResult->getError()->getMessage(), self::CHECK_FAIL);
+        try {
+            $emailCheck->performCheck();
+            $this->logSuccessCheck($checkMsg, $emailCheck->getIndent(), self::CHECK_OK);
+        } catch (Exception $exception) {
+            $this->logFailCheck($checkMsg, $emailCheck->getIndent(), $exception->getMessage(), self::CHECK_FAIL);
+            throw $exception;
         }
-
-        return $receiveCheckResult;
     }
 
     /**

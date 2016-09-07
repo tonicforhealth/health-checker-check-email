@@ -11,8 +11,7 @@ use TonicHealthCheck\Check\Email\Entity\EmailSendReceiveCollection;
 use TonicHealthCheck\Check\Email\Persist\PersistCollectionInterface;
 
 /**
- * Class EmailReceiveCheck
- * @package TonicHealthCheck\Check\Email\Send
+ * Class EmailReceiveCheck.
  */
 class EmailReceiveCheck extends AbstractEmailCheck
 {
@@ -30,7 +29,6 @@ class EmailReceiveCheck extends AbstractEmailCheck
      * @var Mailbox;
      */
     private $mailbox;
-
 
     /**
      * @var PersistCollectionInterface
@@ -62,11 +60,13 @@ class EmailReceiveCheck extends AbstractEmailCheck
     }
 
     /**
-     * Check email can send and receive messages
-     * @return bool|void
+     * Check email can send and receive messages.
+     *
+     * @return void
+     *
      * @throws EmailReceiveCheckException
      */
-    public function check()
+    public function performCheck()
     {
         $this->setEmailSendReceiveColl($this->getPersistCollection()->load());
 
@@ -144,6 +144,7 @@ class EmailReceiveCheck extends AbstractEmailCheck
 
     /**
      * @param EmailSendReceive $emailSendCheckI
+     *
      * @throws EmailReceiveCheckException
      */
     protected function timeReceiveCheck(EmailSendReceive $emailSendCheckI)
@@ -174,20 +175,21 @@ class EmailReceiveCheck extends AbstractEmailCheck
 
     /**
      * @param EmailSendReceive $emailSendCheckI
+     *
      * @throws EmailReceiveCheckException
      */
     private function performReceive(EmailSendReceive $emailSendCheckI)
     {
         try {
-                $mails = $this->getMailbox()->searchMailbox(
+            $mails = $this->getMailbox()->searchMailbox(
                     sprintf('FROM %s SUBJECT "%s"', $emailSendCheckI->getFrom(), $emailSendCheckI->getSubject())
                 );
 
-                $this->timeReceiveCheck($emailSendCheckI);
+            $this->timeReceiveCheck($emailSendCheckI);
 
-                if (count($mails) > 0) {
-                    $this->deleteReceivedEmails($mails, $emailSendCheckI);
-                }
+            if (count($mails) > 0) {
+                $this->deleteReceivedEmails($mails, $emailSendCheckI);
+            }
         } catch (ImapException $e) {
             $emailSendCheckI->setStatus(EmailSendReceive::STATUS_RECEIVED_ERROR);
             throw EmailReceiveCheckException::internalProblem($e);
@@ -195,7 +197,7 @@ class EmailReceiveCheck extends AbstractEmailCheck
     }
 
     /**
-     * remove old items
+     * remove old items.
      */
     private function removeOldItems()
     {
@@ -212,6 +214,7 @@ class EmailReceiveCheck extends AbstractEmailCheck
 
     /**
      * @param EmailSendReceive $emailSendCheckI
+     *
      * @return \Closure
      */
     private function findSameItemCallback(EmailSendReceive $emailSendCheckI)

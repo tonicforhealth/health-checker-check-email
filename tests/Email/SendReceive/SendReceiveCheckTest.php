@@ -17,12 +17,12 @@ use TonicHealthCheck\Check\Email\Persist\PersistCollectionToFile;
 use TonicHealthCheck\Check\Email\Receive\EmailReceiveCheck;
 use TonicHealthCheck\Check\Email\Send\EmailSendCheck;
 use TonicHealthCheck\Check\Email\SendReceiveCheck;
-use ZendDiagnostics\Result\Failure;
-use ZendDiagnostics\Result\Success;
+use ZendDiagnostics\Result\FailureInterface;
 use PhpImap\Exception as ImapException;
+use ZendDiagnostics\Result\SuccessInterface;
 
 /**
- * Class SendReceiveCheckTest
+ * Class SendReceiveCheckTest.
  */
 class SendReceiveCheckTest extends PHPUnit_Framework_TestCase
 {
@@ -61,9 +61,8 @@ class SendReceiveCheckTest extends PHPUnit_Framework_TestCase
      */
     private $sendReceiveCheck;
 
-
     /**
-     * set up
+     * set up.
      */
     public function setUp()
     {
@@ -82,7 +81,7 @@ class SendReceiveCheckTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * set up
+     * set up.
      */
     public function setUpSend()
     {
@@ -112,7 +111,7 @@ class SendReceiveCheckTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * set up
+     * set up.
      */
     public function setUpReceive()
     {
@@ -129,7 +128,7 @@ class SendReceiveCheckTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * test is ok
+     * test is ok.
      */
     public function testCheckIsOk()
     {
@@ -138,13 +137,11 @@ class SendReceiveCheckTest extends PHPUnit_Framework_TestCase
         $this->setUpGetMailBoxMock();
         $result = $this->getSendReceiveCheck()->check();
 
-
-        $this->assertInstanceOf(Success::class, $result);
-
+        $this->assertInstanceOf(SuccessInterface::class, $result);
     }
 
     /**
-     * test is send fail
+     * test is send fail.
      */
     public function testCheckIsSendFail()
     {
@@ -154,12 +151,11 @@ class SendReceiveCheckTest extends PHPUnit_Framework_TestCase
 
         $result = $this->getSendReceiveCheck()->check();
 
-
-        $this->assertInstanceOf(Failure::class, $result);
+        $this->assertInstanceOf(FailureInterface::class, $result);
     }
 
     /**
-     * test is receive fail
+     * test is receive fail.
      */
     public function testCheckIsReceiveFail()
     {
@@ -179,20 +175,17 @@ class SendReceiveCheckTest extends PHPUnit_Framework_TestCase
 
         $result = $this->getSendReceiveCheck()->check();
 
-
-        $this->assertInstanceOf(Failure::class, $result);
+        $this->assertInstanceOf(FailureInterface::class, $result);
     }
 
     /**
-     * test label
+     * test label.
      */
     public function testLabel()
     {
         $label = $this->getEmailSendCheck()->getIndent().' <-> '.$this->getEmailReceiveCheck()->getIndent();
         $this->assertEquals($label, $this->getSendReceiveCheck()->getLabel());
     }
-
-
 
     /**
      * @return EmailReceiveCheck
@@ -282,9 +275,9 @@ class SendReceiveCheckTest extends PHPUnit_Framework_TestCase
         return $this->mailer;
     }
 
-
     /**
      * @param EmailSendCheck $emailSendCheck
+     *
      * @internal param EmailSendCheck $emailSendCheck
      */
     protected function setEmailSendCheck(EmailSendCheck $emailSendCheck)
@@ -310,22 +303,19 @@ class SendReceiveCheckTest extends PHPUnit_Framework_TestCase
 
     private function setUpEntity($sentAt = '-1 day')
     {
-
         $emailSendReceive = new EmailSendReceive();
 
         $emailSendReceive->setSentAt(new DateTime($sentAt));
-
 
         $emailSendReceiveColl = new EmailSendReceiveCollection();
         $emailSendReceiveColl->add($emailSendReceive);
 
         $this->getPersistCollection()->persist($emailSendReceiveColl);
         $this->getPersistCollection()->flush();
-
     }
 
     /**
-     * set up get mail box mock
+     * set up get mail box mock.
      */
     private function setUpGetMailBoxMock()
     {
@@ -336,7 +326,7 @@ class SendReceiveCheckTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * set ip send mock
+     * set ip send mock.
      */
     private function setUpSendMock()
     {
@@ -352,4 +342,3 @@ class SendReceiveCheckTest extends PHPUnit_Framework_TestCase
             );
     }
 }
-

@@ -14,11 +14,9 @@ use TonicHealthCheck\Check\Email\Persist\PersistCollectionInterface;
 use TonicHealthCheck\Check\Email\Persist\PersistCollectionToFile;
 use TonicHealthCheck\Check\Email\Receive\EmailReceiveCheck;
 use TonicHealthCheck\Check\Email\Receive\EmailReceiveCheckException;
-use TonicHealthCheck\Check\Email\Send\EmailSendCheck;
 
 /**
- * Class EmailReceiveCheckTest
- * @package TonicHealthCheck\Tests\Elasticsearch\GetDocument
+ * Class EmailReceiveCheckTest.
  */
 class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
 {
@@ -42,9 +40,8 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
      */
     private $persistCollection;
 
-
     /**
-     * set up
+     * set up.
      */
     public function setUp()
     {
@@ -63,7 +60,7 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Test is ok
+     * Test is ok.
      */
     public function testCheckIsOk()
     {
@@ -71,14 +68,14 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
 
         $this->setUpGetMailBoxMock();
 
-        $checkResult = $this->getEmailReceiveCheck()->performCheck();
+        $checkResult = $this->getEmailReceiveCheck()->check();
 
         $this->assertTrue($checkResult->isOk());
         $this->assertNull($checkResult->getError());
     }
 
     /**
-     * Test is fail with exception
+     * Test is fail with exception.
      */
     public function testSearchMailboxThrowException()
     {
@@ -94,7 +91,7 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
             ->method('searchMailbox')
             ->willThrowException($imapException);
 
-        $checkResult = $this->getEmailReceiveCheck()->performCheck();
+        $checkResult = $this->getEmailReceiveCheck()->check();
 
         $this->assertFalse($checkResult->isOk());
         $this->assertEquals(EmailReceiveCheckException::CODE_INTERNAL_PROBLE, $checkResult->getError()->getCode());
@@ -129,11 +126,10 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Test is fail with exception
+     * Test is fail with exception.
      */
     public function testThrowReceivingMaxTimeExpireException()
     {
-
         $this->setUpEntity('now');
 
         $this
@@ -141,9 +137,9 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
             ->method('searchMailbox')
             ->willReturn([1, 2, 3, 4, 5]);
 
-        $checkResultFirst = $this->getEmailReceiveCheck()->performCheck();
+        $checkResultFirst = $this->getEmailReceiveCheck()->check();
         $this->setUpEntity();
-        $checkResultSecond = $this->getEmailReceiveCheck()->performCheck();
+        $checkResultSecond = $this->getEmailReceiveCheck()->check();
 
         $this->assertTrue($checkResultFirst->isOk());
         $this->assertFalse($checkResultSecond->isOk());
@@ -228,19 +224,16 @@ class EmailReceiveCheckTest extends PHPUnit_Framework_TestCase
 
     private function setUpEntity($sentAt = '-1 day')
     {
-
         $emailSendReceive = new EmailSendReceive();
 
         $emailSendReceive->setSentAt(new DateTime($sentAt));
         $emailSendReceive->setStatus(EmailSendReceive::STATUS_SANDED);
-
 
         $emailSendReceiveColl = new EmailSendReceiveCollection();
         $emailSendReceiveColl->add($emailSendReceive);
 
         $this->getPersistCollection()->persist($emailSendReceiveColl);
         $this->getPersistCollection()->flush();
-
     }
 
     private function setUpGetMailBoxMock()
